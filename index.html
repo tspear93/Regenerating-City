@@ -1,0 +1,128 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Regenerating City — Web Preview</title>
+  <meta name="description" content="Web‑friendly preview of the Regenerating City map, live metric target, and public API." />
+  <style>
+:root {
+  --bg: #0b0f14;
+  --card: #121821;
+  --text: #e7eef7;
+  --muted: #9ab0c7;
+  --accent: #67d3ff;
+  --life: #8df59b;
+  --whatif: #8bbcff;
+  --death: #ff9a9a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+a { color: var(--accent); text-decoration: none; }
+.header { padding: 20px; text-align: center; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 16px; display: grid; grid-template-columns: 1fr; gap: 16px; }
+.card { background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; }
+.grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 900px) { .grid { grid-template-columns: 1fr 1fr; } }
+.h1 { font-size: 28px; margin: 0 0 6px; }
+.small { color: var(--muted); font-size: 14px; }
+.img { width: 100%; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background:#0e141b; }
+.btnrow { display:flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.btn { background: var(--card); border: 1px solid rgba(255,255,255,0.12); color: var(--text); padding: 10px 14px; border-radius: 10px; cursor:pointer; }
+.footer { text-align:center; color: var(--muted); padding: 24px; font-size: 13px; }
+.canvasWrap { aspect-ratio: 16/9; width: 100%; background: radial-gradient(1200px 800px at 50% 50%, rgba(103,211,255,0.09), transparent 60%); border-radius: 14px; border:1px solid rgba(255,255,255,0.08); }
+kbd { background:#10161f; border:1px solid rgba(255,255,255,0.1); border-bottom-width:2px; padding:2px 6px; border-radius:6px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="h1">Regenerating City — Web Preview</h1>
+    <div class="small">Born from the Auditor’s Era — Guided by the Nature Boy and the Man in the Mirror.</div>
+  </div>
+  <div class="wrap">
+    <div class="grid">
+      <div class="card">
+        <h2 class="h1">Live Metric Target (Web Animation)</h2>
+        <div class="small">Pulsing target with sample department points. Mirrors the open metric system.</div>
+        <div class="canvasWrap"><canvas id="metricCanvas" class="img"></canvas></div>
+        <div class="btnrow">
+          <button id="dlApi" class="btn">Open Public API Spec</button>
+          <button id="dlJSON" class="btn">Open Sample Metrics JSON</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2 class="h1">City Map (Schematic)</h2>
+        <img class="img" src="assets/regenerating_city_full_map.png" alt="Regenerating City Map" />
+      </div>
+      <div class="card">
+        <h2 class="h1">Current Visual State</h2>
+        <img class="img" src="assets/regenerating_city_live_metric.png" alt="Metric Target" />
+      </div>
+      <div class="card">
+        <h2 class="h1">How to Use</h2>
+        <ul>
+          <li>Host this folder on any static web host (GitHub Pages, Netlify, Vercel, S3).</li>
+          <li>Swap <code>assets/regenerating_city_sample_metrics.json</code> with your live endpoint when ready.</li>
+          <li>All visuals are optimized for fast loading and mobile use.</li>
+        </ul>
+        <div class="small">The Auditor’s Collective — Steward of Balance</div>
+      </div>
+    </div>
+  </div>
+  <script>
+const state = { t0: performance.now(), data: [] };
+async function loadData() {
+  try {
+    const res = await fetch('assets/regenerating_city_sample_metrics.json');
+    state.data = await res.json();
+  } catch(e) {
+    state.data = [
+      {"department":"Education","coord":{"r":1.2,"theta":0.3}},
+      {"department":"Media","coord":{"r":1.5,"theta":1.8}},
+      {"department":"Health","coord":{"r":1.1,"theta":0.05}},
+      {"department":"Housing","coord":{"r":1.7,"theta":2.6}}
+    ];
+  }
+}
+function draw() {
+  const cvs = document.getElementById('metricCanvas');
+  if (!cvs) return;
+  const ctx = cvs.getContext('2d');
+  const w = cvs.clientWidth, h = cvs.clientHeight;
+  if (cvs.width !== w || cvs.height !== h) { cvs.width = w; cvs.height = h; }
+  ctx.clearRect(0,0,w,h);
+  const cx = w/2, cy = h/2;
+  const base = Math.min(w,h)*0.33;
+  ctx.fillStyle = "rgba(255,255,255,0.02)";
+  ctx.beginPath(); ctx.arc(cx, cy, base*1.35, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 2;
+  [1.0, 1.4, 1.8].forEach(m => { ctx.beginPath(); ctx.arc(cx, cy, base*m, 0, Math.PI*2); ctx.stroke(); });
+  ctx.strokeStyle = "rgba(255,255,255,0.25)";
+  ctx.beginPath(); ctx.moveTo(cx, cy-base*1.9); ctx.lineTo(cx, cy+base*1.9); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx-base*1.9, cy); ctx.lineTo(cx+base*1.9, cy); ctx.stroke();
+  ctx.fillStyle = "rgba(231,238,247,0.95)"; ctx.font = "14px system-ui, -apple-system, Segoe UI, Roboto";
+  ctx.textAlign = "center"; ctx.fillText("LIFE ↑", cx, cy-base*2.05); ctx.fillText("DEATH ↓", cx, cy+base*2.05);
+  ctx.textAlign = "left"; ctx.fillText("WHAT IF →", cx+base*1.95, cy);
+  const t = (performance.now()-state.t0)/1000; const pulse = (Math.sin(t*2)+1)/2;
+  ctx.strokeStyle = `rgba(141,245,155,${0.25+0.35*pulse})`; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(cx, cy, base*(1.0 + 0.15*pulse), 0, Math.PI*2); ctx.stroke();
+  state.data.forEach((d) => {
+    const r = (d.coord?.r || 1.2) * base * 0.8;
+    const a = (d.coord?.theta || 0) - Math.PI/2;
+    const x = cx + r * Math.cos(a); const y = cy + r * Math.sin(a);
+    ctx.fillStyle = "rgba(103,211,255,0.95)";
+    ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "rgba(154,176,199,0.95)"; ctx.font = "12px system-ui, -apple-system, Segoe UI, Roboto";
+    ctx.textAlign = "center"; ctx.fillText(d.department || "Dept", x, y-10);
+  });
+  requestAnimationFrame(draw);
+}
+window.addEventListener('DOMContentLoaded', async () => {
+  await loadData(); draw();
+  document.getElementById('dlApi').addEventListener('click', () => window.open('assets/regenerating_city_public_api.yaml','_blank'));
+  document.getElementById('dlJSON').addEventListener('click', () => window.open('assets/regenerating_city_sample_metrics.json','_blank'));
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,159 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Regenerating City — Departments Map</title>
+<link rel="stylesheet" href="assets/styles.css" />
+<style>
+.mapWrap { background:#0e141b; border-radius:14px; border:1px solid rgba(255,255,255,0.08); padding:10px; }
+.tooltip { position:fixed; pointer-events:none; background:#0b0f14; border:1px solid rgba(255,255,255,0.1); padding:8px 10px; border-radius:8px; color:#e7eef7; font-size:12px; display:none; }
+.marker { cursor:pointer; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="h1">Departments Map — Hover for Metrics</h1>
+    <div class="small">Hubs and departments plotted over a schematic Manhattan outline.</div>
+  </div>
+  <div class="wrap">
+    <div class="card">
+      <div class="mapWrap">
+        <svg id="citySvg" viewBox="-220 -50 440 520" style="width:100%; height:auto;">
+          <!-- Simple Manhattan-like silhouette -->
+          <path d="M0,0 L90,8 L100,40 L100,110 L90,180 L70,230 L55,260 L40,290 L25,320 L18,350 L12,370 L8,385 L4,400 L0,415 L-4,400 L-8,385 L-12,370 L-18,350 L-25,320 L-40,290 L-55,260 L-70,230 L-90,180 L-100,110 L-100,40 L-90,8 Z"
+                fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+          <!-- Markers (approximate positions) -->
+          <g id="markers" fill="rgba(103,211,255,0.95)">
+            <circle class="marker" data-name="42nd St Port" cx="0" cy="210" r="6"/>
+            <circle class="marker" data-name="Times Square" cx="0" cy="240" r="6"/>
+            <circle class="marker" data-name="Rockefeller (Education)" cx="10" cy="270" r="6"/>
+            <circle class="marker" data-name="United Nations" cx="60" cy="240" r="6"/>
+            <circle class="marker" data-name="1 River Place (Auditing)" cx="-30" cy="245" r="6"/>
+            <circle class="marker" data-name="Hudson Yards (Soffice)" cx="-50" cy="210" r="6"/>
+          </g>
+        </svg>
+        <div id="tip" class="tooltip"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="h1">Departments & Live Values</h2>
+      <div class="small">Sample metrics pulled from JSON (replace with your live API later).</div>
+      <div id="deptList" class="small"></div>
+    </div>
+
+    <div class="card">
+      <h2 class="h1">Pull an Alarm (Public Feedback)</h2>
+      <div class="small">Submit a civic alarm. Stored locally and downloadable as JSON.</div>
+      <form id="alarmForm">
+        <div style="display:grid; gap:8px; grid-template-columns: 1fr 1fr;">
+          <input name="location" placeholder="Location (e.g., Times Square)" required class="btn"/>
+          <input name="category" placeholder="Category (e.g., Education)" required class="btn"/>
+        </div>
+        <textarea name="description" placeholder="Describe the issue..." rows="4" style="width:100%; margin-top:8px;" class="btn"></textarea>
+        <div class="btnrow">
+          <button type="submit" class="btn">Submit Alarm</button>
+          <button type="button" id="dlAlarms" class="btn">Download Alarms JSON</button>
+          <button type="button" id="clearAlarms" class="btn">Clear</button>
+        </div>
+      </form>
+      <div id="alarmsOut" class="small" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <h2 class="h1">Share This Preview</h2>
+      <div class="small">Scan to open <code>index.html</code> on phones.</div>
+      <img src="assets/qr_index.png" alt="QR to index.html" style="max-width:200px; width:50%; border-radius:8px; border:1px solid rgba(255,255,255,0.12);" />
+    </div>
+
+    <div class="footer">The Auditor’s Collective — Steward of Balance</div>
+  </div>
+
+<script>
+const tip = document.getElementById('tip');
+
+function showTip(x,y, html) {
+  tip.style.display = 'block';
+  tip.style.left = (x + 12) + 'px';
+  tip.style.top = (y + 12) + 'px';
+  tip.innerHTML = html;
+}
+function hideTip() { tip.style.display = 'none'; }
+
+// Load sample department metrics
+let departments = [];
+async function loadDepartments() {
+  try {
+    const res = await fetch('assets/regenerating_city_sample_metrics.json');
+    departments = await res.json();
+  } catch(e) {
+    departments = [
+      {"department":"Education","coord":{"r":1.2,"theta":0.3}},
+      {"department":"Media","coord":{"r":1.5,"theta":1.8}},
+      {"department":"Health","coord":{"r":1.1,"theta":0.05}},
+      {"department":"Housing","coord":{"r":1.7,"theta":2.6}}
+    ];
+  }
+  renderDeptList();
+}
+function renderDeptList() {
+  const el = document.getElementById('deptList');
+  el.innerHTML = departments.map(d => {
+    const r = (d.coord && d.coord.r) || 0;
+    const th = (d.coord && d.coord.theta) || 0;
+    return `<div>• <b>${d.department}</b> — r=${r.toFixed(2)}, θ=${th.toFixed(2)}</div>`;
+  }).join('');
+}
+document.getElementById('markers').addEventListener('mousemove', (e) => {
+  const target = e.target.closest('.marker');
+  if (!target) return hideTip();
+  const name = target.getAttribute('data-name');
+  const d = departments[Math.floor(Math.random()*departments.length)] || {};
+  const r = (d.coord && d.coord.r) || 1.2;
+  const th = (d.coord && d.coord.theta) || 0.3;
+  showTip(e.pageX, e.pageY, `<b>${name}</b><br/>r=${r.toFixed(2)} θ=${th.toFixed(2)}`);
+});
+document.getElementById('markers').addEventListener('mouseleave', hideTip);
+
+// Alarm form (local storage only)
+const KEY = 'regen_city_alarms';
+function loadAlarms() { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch(e){ return []; } }
+function saveAlarms(arr) { localStorage.setItem(KEY, JSON.stringify(arr)); }
+function renderAlarms() {
+  const out = document.getElementById('alarmsOut');
+  const arr = loadAlarms();
+  if (!arr.length) { out.textContent = 'No alarms yet.'; return; }
+  out.innerHTML = arr.map(a => `<div>• <b>${a.location}</b> [${a.category}] — ${a.description}</div>`).join('');
+}
+
+document.getElementById('alarmForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const alarm = {
+    id: 'A-' + Math.random().toString(36).slice(2,8),
+    createdAt: new Date().toISOString(),
+    location: fd.get('location') || '',
+    category: fd.get('category') || '',
+    description: fd.get('description') || '',
+    status: 'active'
+  };
+  const arr = loadAlarms(); arr.push(alarm); saveAlarms(arr);
+  e.target.reset(); renderAlarms();
+});
+
+document.getElementById('dlAlarms').addEventListener('click', () => {
+  const data = new Blob([JSON.stringify(loadAlarms(), null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(data);
+  const a = document.createElement('a'); a.href = url; a.download = 'alarms.json'; a.click();
+  URL.revokeObjectURL(url);
+});
+document.getElementById('clearAlarms').addEventListener('click', () => {
+  saveAlarms([]); renderAlarms();
+});
+
+loadDepartments(); renderAlarms();
+</script>
+</body>
+</html>
